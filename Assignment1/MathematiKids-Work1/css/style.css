@@ -1,0 +1,15 @@
+/* ============================================================
+   MathematiKids — Custom CSS
+   ------------------------------------------------------------
+   Most styling lives in Tailwind utility classes inside
+   index.html. This file is reserved for things Tailwind
+   doesn't cover well: animations, gradients, custom fonts,
+   and accessibility tweaks.
+
+   Milestone 1: minimal base only. Visual polish lands in
+   Milestone 8.
+   ============================================================ */
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
