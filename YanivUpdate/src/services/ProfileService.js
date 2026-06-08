@@ -45,3 +45,20 @@ export function editProfile(profileId, { name, avatar }) {
 export function deleteProfile(profileId) {
   return request(`${API_BASE}/profiles/${profileId}`, { method: 'DELETE' });
 }
+
+export async function buyAvatar(profileId, { avatar, cost }) {
+  const response = await fetch(`/api/profiles/${profileId}/avatar`, {
+    method: 'PUT', 
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ avatar, cost }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'error in purchasing the avatar');
+  }
+
+  return await response.json();
+}

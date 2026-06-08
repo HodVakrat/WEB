@@ -105,3 +105,43 @@ export async function deleteProfile(req, res) {
     return res.status(500).json({ error: 'Server error while deleting profile.' });
   }
 }
+
+/*
+ * PUT /api/profiles/:profileId/avatar  { avatar, cost }
+*/
+export async function buyAvatar(req, res) {
+  const { profileId } = req.params;
+  const { avatar, cost } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(profileId)) {
+    return res.status(400).json({ error: 'Invalid profile id.' });
+  }
+  if (typeof avatar !== 'string' || avatar.trim().length === 0) {
+    return res.status(400).json({ error: 'Avatar identifier is required.' });
+  }
+  
+  const numericCost = Number(cost) || 0;
+
+  try {
+=    const parent = await Parent.findOne({ 'profiles._id': profileId });
+    if (!parent) {
+      return res.status(404).json({ error: 'Profile not found.' });
+    }
+
+    const profile = parent.profiles.id(profileId); // 
+
+    if (profile.coins < numericCost) {
+      return res.status(400).json({ error: 'you have not enough coins to buy this avatar!' });
+    }
+
+    profile.coins -= numericCost;
+    profile.avatar = avatar;
+
+    await parent.save(); 
+    
+    return res.status(200).json(parent); 
+  } catch (err) {
+    console.error('buyAvatar error:', err.message);
+    return res.status(500).json({ error: 'Server error while purchasing avatar.' });
+  }
+}

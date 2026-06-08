@@ -8,6 +8,7 @@ import QuizPage from '../UsersManager/QuizPage.jsx';
 import HistoryPage from '../UsersManager/HistoryPage.jsx';
 import ParentScreen from '../UsersManager/ParentScreen.jsx';
 import { getParent } from '../services/AuthService.js';
+import AvatarShop from '../UIComponents/AvatarShop.jsx';
 
 function ComponentSwitcher() {
     const [activeComponent, setActiveComponent] = useState('login');
@@ -126,6 +127,11 @@ function ComponentSwitcher() {
         'history': <HistoryPage onNavigate={handleNavigate} />,
         'manage': <ManageUsers />,
         'profile': <Profile />,
+        'shop': activeProfile ? (
+        <AvatarShop currentProfile={activeProfile} onParentUpdated={handleParentUpdated} />
+    ) : (
+        <p className="text-gray-400 italic">please enter to your profile first</p>
+    ),
     };
 
     const componentToShow = components_map[activeComponent] ||
@@ -140,6 +146,7 @@ function ComponentSwitcher() {
         'history': 'History',
         'manage': 'Manage Users',
         'profile': 'Profile',
+        'shop': 'Avatar Shop',
     };
     return (
         <div className="flex flex-col items-center p-6 font-bold rounded-md shadow-md">
