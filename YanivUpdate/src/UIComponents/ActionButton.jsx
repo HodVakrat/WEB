@@ -1,4 +1,5 @@
 export default function ActionButton(props) {
+    // When disabled, dim the button and block the click (prevents double-submit).
     const buttonStyle = {
       backgroundColor: props.backgroundColor,
       color: 'white',
@@ -6,11 +7,12 @@ export default function ActionButton(props) {
       padding: '10px 20px',
       border: 'none',
       borderRadius: '5px',
-      cursor: 'pointer',
+      cursor: props.disabled ? 'not-allowed' : 'pointer',
+      opacity: props.disabled ? 0.6 : 1,
     };
-  
+
     return (
-      <button style={buttonStyle} onClick={props.onClick}>
+      <button style={buttonStyle} onClick={props.onClick} disabled={props.disabled}>
         {props.text}
       </button>
     );

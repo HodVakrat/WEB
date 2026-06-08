@@ -1,8 +1,13 @@
 import { useState } from 'react';
 
-export default function MathDashboard({ onNavigate }) {
+export default function MathDashboard({ profile, onNavigate, onBackToParent }) {
     const [selectedSubject, setSelectedSubject] = useState(null);
     const [selectedLevel, setSelectedLevel] = useState(null);
+
+    // Defensive guard: the dashboard only makes sense for an active profile.
+    if (!profile) {
+        return <p className="text-gray-400 italic p-6">No profile selected.</p>;
+    }
 
     const subjects = [
         { id: 'addition', label: 'Addition', icon: '➕' },
@@ -37,15 +42,15 @@ export default function MathDashboard({ onNavigate }) {
             {/* Welcome Header */}
             <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700 flex justify-between items-center">
                 <div className="flex items-center gap-4">
-                    <span className="text-4xl">🐱</span>
+                    <span className="text-4xl">{profile.avatar}</span>
                     <div>
                         <p className="text-gray-400 text-sm">Welcome back,</p>
-                        <h1 className="text-3xl font-bold">ilya</h1>
+                        <h1 className="text-3xl font-bold">{profile.name}</h1>
                     </div>
                 </div>
                 <div className="text-center">
-                    <p className="text-gray-400 text-sm">Your points</p>
-                    <p className="text-3xl font-bold text-yellow-400 flex items-center gap-2">⭐ 0</p>
+                    <p className="text-gray-400 text-sm">Your coins</p>
+                    <p className="text-3xl font-bold text-yellow-400 flex items-center gap-2">⭐ {profile.coins}</p>
                 </div>
             </div>
 
@@ -109,11 +114,11 @@ export default function MathDashboard({ onNavigate }) {
                 >
                     History
                 </button>
-                <button 
-                    onClick={() => onNavigate && onNavigate('login')}
+                <button
+                    onClick={() => onBackToParent && onBackToParent()}
                     className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition-colors"
                 >
-                    Logout
+                    Back to parent
                 </button>
             </div>
         </div>
