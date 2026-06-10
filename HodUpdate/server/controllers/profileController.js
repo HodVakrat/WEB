@@ -123,7 +123,7 @@ export async function buyAvatar(req, res) {
   const numericCost = Number(cost) || 0;
 
   try {
-=    const parent = await Parent.findOne({ 'profiles._id': profileId });
+    const parent = await Parent.findOne({ 'profiles._id': profileId });
     if (!parent) {
       return res.status(404).json({ error: 'Profile not found.' });
     }

@@ -46,19 +46,14 @@ export function deleteProfile(profileId) {
   return request(`${API_BASE}/profiles/${profileId}`, { method: 'DELETE' });
 }
 
-export async function buyAvatar(profileId, { avatar, cost }) {
-  const response = await fetch(`/api/profiles/${profileId}/avatar`, {
-    method: 'PUT', 
-    headers: {
-      'Content-Type': 'application/json',
-    },
+/*
+ * Buy an avatar for a profile. The server checks the wallet, deducts
+ * the cost and saves the new avatar. Resolves to the updated parent.
+ */
+export function buyAvatar(profileId, { avatar, cost }) {
+  return request(`${API_BASE}/profiles/${profileId}/avatar`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ avatar, cost }),
   });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'error in purchasing the avatar');
-  }
-
-  return await response.json();
 }
