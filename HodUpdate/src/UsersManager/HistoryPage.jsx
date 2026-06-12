@@ -15,13 +15,11 @@ export default function HistoryPage({ onNavigate }) {
 
     const subjects = ['all', 'Addition', 'Subtraction', 'Multiplication', 'Division', 'Fractions', 'Percentages'];
 
-    const filteredHistory = filterSubject === 'all' 
-        ? historyData 
+    const filteredHistory = filterSubject === 'all'
+        ? historyData
         : historyData.filter(item => item.subject === filterSubject);
 
-    const getScorePercentage = (score, maxScore) => {
-        return Math.round((score / maxScore) * 100);
-    };
+    const getScorePercentage = (score, maxScore) => Math.round((score / maxScore) * 100);
 
     const getScoreColor = (percentage) => {
         if (percentage >= 80) return 'text-green-400';
@@ -29,30 +27,27 @@ export default function HistoryPage({ onNavigate }) {
         return 'text-red-400';
     };
 
+    const getBarColor = (percentage) => {
+        if (percentage >= 80) return 'bg-green-500';
+        if (percentage >= 60) return 'bg-yellow-500';
+        return 'bg-red-500';
+    };
+
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-4xl font-bold">📚 Quiz History</h1>
-                <button 
-                    onClick={() => onNavigate && onNavigate('dashboard')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
-                >
-                    Back to Dashboard
-                </button>
-            </div>
+        <div className="p-6">
+            <h1 className="text-3xl font-bold text-white mb-6">Quiz History 📚</h1>
 
             {/* Filter Buttons */}
-            <div className="mb-8">
-                <p className="text-gray-400 text-sm mb-4 font-semibold">FILTER BY SUBJECT</p>
+            <div className="mb-6">
+                <p className="text-gray-400 text-sm mb-3 font-semibold">FILTER BY SUBJECT</p>
                 <div className="flex flex-wrap gap-2">
                     {subjects.map(subject => (
                         <button
                             key={subject}
                             onClick={() => setFilterSubject(subject)}
-                            className={`px-4 py-2 rounded-lg transition-all font-semibold capitalize ${
+                            className={`px-4 py-2 rounded-lg transition-all font-semibold capitalize text-sm ${
                                 filterSubject === subject
-                                    ? 'bg-blue-600 border-blue-500 text-white'
+                                    ? 'bg-blue-600 text-white'
                                     : 'bg-gray-800 border border-gray-700 text-gray-300 hover:border-blue-500'
                             }`}
                         >
@@ -63,7 +58,7 @@ export default function HistoryPage({ onNavigate }) {
             </div>
 
             {/* History List */}
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {filteredHistory.length === 0 ? (
                     <div className="text-center py-12">
                         <p className="text-gray-400 text-lg">No history found for this subject</p>
@@ -72,49 +67,35 @@ export default function HistoryPage({ onNavigate }) {
                     filteredHistory.map(item => {
                         const percentage = getScorePercentage(item.score, item.maxScore);
                         return (
-                            <div 
+                            <div
                                 key={item.id}
-                                className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-blue-500 transition-all cursor-pointer"
+                                className="bg-gray-800 border border-gray-700 rounded-xl p-5 hover:border-gray-600 transition-all"
                             >
                                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-                                    {/* Subject and Level */}
                                     <div className="md:col-span-2">
                                         <h3 className="text-lg font-bold text-gray-100">{item.subject}</h3>
                                         <p className="text-sm text-gray-400 mt-1">
-                                            {item.level} • {item.date} at {item.time}
+                                            {item.level} &middot; {item.date} at {item.time}
                                         </p>
                                     </div>
-
-                                    {/* Score */}
                                     <div className="text-center">
-                                        <p className="text-sm text-gray-400 mb-1">SCORE</p>
+                                        <p className="text-xs text-gray-400 mb-1">SCORE</p>
                                         <p className={`text-2xl font-bold ${getScoreColor(percentage)}`}>
                                             {item.score}/{item.maxScore}
                                         </p>
-                                        <p className="text-xs text-gray-500 mt-1">{percentage}%</p>
                                     </div>
-
-                                    {/* Duration */}
                                     <div className="text-center">
-                                        <p className="text-sm text-gray-400 mb-1">DURATION</p>
-                                        <p className="text-lg font-bold text-gray-100">
-                                            {item.duration}
-                                        </p>
+                                        <p className="text-xs text-gray-400 mb-1">TIME</p>
+                                        <p className="text-lg font-bold text-gray-100">{item.duration}</p>
                                     </div>
-
-                                    {/* Progress Bar */}
                                     <div>
                                         <div className="w-full bg-gray-700 rounded-full h-2">
-                                            <div 
-                                                className={`h-2 rounded-full transition-all ${
-                                                    percentage >= 80 ? 'bg-green-500' : 
-                                                    percentage >= 60 ? 'bg-yellow-500' : 
-                                                    'bg-red-500'
-                                                }`}
+                                            <div
+                                                className={`h-2 rounded-full transition-all ${getBarColor(percentage)}`}
                                                 style={{ width: `${percentage}%` }}
                                             ></div>
                                         </div>
-                                        <p className="text-xs text-gray-500 mt-2 text-right">{percentage}%</p>
+                                        <p className="text-xs text-gray-500 mt-1 text-right">{percentage}%</p>
                                     </div>
                                 </div>
                             </div>
@@ -125,23 +106,20 @@ export default function HistoryPage({ onNavigate }) {
 
             {/* Summary Stats */}
             {filteredHistory.length > 0 && (
-                <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                        <p className="text-gray-400 text-sm mb-2">TOTAL QUIZZES</p>
-                        <p className="text-4xl font-bold text-blue-400">{filteredHistory.length}</p>
+                <div className="mt-8 grid grid-cols-3 gap-4">
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                        <p className="text-gray-400 text-xs mb-1">TOTAL QUIZZES</p>
+                        <p className="text-3xl font-bold text-blue-400">{filteredHistory.length}</p>
                     </div>
-                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                        <p className="text-gray-400 text-sm mb-2">AVERAGE SCORE</p>
-                        <p className="text-4xl font-bold text-green-400">
-                            {Math.round(
-                                filteredHistory.reduce((sum, item) => sum + getScorePercentage(item.score, item.maxScore), 0) / 
-                                filteredHistory.length
-                            )}%
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                        <p className="text-gray-400 text-xs mb-1">AVG SCORE</p>
+                        <p className="text-3xl font-bold text-green-400">
+                            {Math.round(filteredHistory.reduce((sum, item) => sum + getScorePercentage(item.score, item.maxScore), 0) / filteredHistory.length)}%
                         </p>
                     </div>
-                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                        <p className="text-gray-400 text-sm mb-2">TOTAL POINTS</p>
-                        <p className="text-4xl font-bold text-yellow-400">
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 text-center">
+                        <p className="text-gray-400 text-xs mb-1">TOTAL POINTS</p>
+                        <p className="text-3xl font-bold text-yellow-400">
                             {filteredHistory.reduce((sum, item) => sum + item.score, 0)}
                         </p>
                     </div>
