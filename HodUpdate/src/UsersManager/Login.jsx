@@ -1,21 +1,12 @@
 import { useState } from 'react';
-import LabeledInput from '../UIComponents/LabeledInput';
-import ActionButton from '../UIComponents/ActionButton';
 import { login } from '../services/AuthService';
 
 export default function Login({ onNavigate, onLogin }) {
-    /*
-     * Controlled fields + UI state (error message, request-in-flight).
-     */
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    /*
-     * Validate presence, call the login service, and on success hand the
-     * parent up to ComponentSwitcher (onLogin), which stores it + navigates.
-     */
     const handleLogin = async () => {
         if (!email || !password) {
             setError('Please enter email and password.');
@@ -33,18 +24,75 @@ export default function Login({ onNavigate, onLogin }) {
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') handleLogin();
+    };
+
     return (
-        <div className="bg-gray-800 p-8 rounded shadow-md w-96 justify-self-center justify-items-center mx-auto my-16 text-white border border-gray-700">
-            <h2 className="text-xl font-bold mb-6 text-center">Log in</h2>
+        <div className="flex-1 flex items-center justify-center p-6 min-h-[80vh]">
+            <div className="w-full max-w-md">
+                {/* Welcome section */}
+                <div className="text-center mb-8">
+                    <div className="text-6xl mb-4">🧮</div>
+                    <h1 className="text-3xl font-bold text-white mb-2">
+                        Welcome to Mathemati<span className="text-blue-400">Kids</span>
+                    </h1>
+                    <p className="text-gray-400">Sign in to start learning math!</p>
+                </div>
 
-            <LabeledInput label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
-            <LabeledInput label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+                {/* Login form */}
+                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-xl">
+                    <div className="mb-5">
+                        <label className="block text-sm font-semibold text-gray-300 mb-2">Email</label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="parent@example.com"
+                            className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                        />
+                    </div>
 
-            {/* Error message (only when there is one) */}
-            {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+                    <div className="mb-6">
+                        <label className="block text-sm font-semibold text-gray-300 mb-2">Password</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Enter your password"
+                            className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                        />
+                    </div>
 
-            <ActionButton text={loading ? 'Logging in...' : 'Login'} backgroundColor="CornflowerBlue" onClick={handleLogin} disabled={loading} />
-            <ActionButton text="Register" backgroundColor="Gray" onClick={() => onNavigate && onNavigate('register')} disabled={loading} />
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
+                            <p className="text-red-400 text-sm">{error}</p>
+                        </div>
+                    )}
+
+                    <button
+                        onClick={handleLogin}
+                        disabled={loading}
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-colors mb-3"
+                    >
+                        {loading ? 'Logging in...' : 'Log In'}
+                    </button>
+
+                    <div className="text-center mt-4">
+                        <p className="text-gray-400 text-sm">
+                            Don't have an account?{' '}
+                            <button
+                                onClick={() => onNavigate && onNavigate('register')}
+                                className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+                            >
+                                Sign up
+                            </button>
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

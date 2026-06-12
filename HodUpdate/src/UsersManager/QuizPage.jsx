@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { generateQuestions, isCorrect } from '../logic/QuizLogic';
 import { saveQuizResult } from '../services/ResultService';
+import BotHelper from './BotHelper';
 
 /*
  * Time limit (in seconds) per difficulty level.
@@ -45,6 +46,7 @@ export default function QuizPage({ subject = 'Addition', level = 'Beginner', pro
     // Result-saving state: save exactly once, and remember the coins earned.
     const [saved, setSaved] = useState(false);
     const [earned, setEarned] = useState(0);
+    const [showBot, setShowBot] = useState(false);
 
     const question = questions[current];
     // A question is "locked" once it was answered OR its time ran out.
@@ -150,9 +152,10 @@ export default function QuizPage({ subject = 'Addition', level = 'Beginner', pro
      */
     if (finished) {
         return (
-            <div className="min-h-screen bg-gray-900 text-white p-6 flex items-center justify-center">
-                <div className="bg-gray-800 rounded-lg p-10 border border-gray-700 text-center max-w-md w-full">
-                    <h2 className="text-3xl font-bold mb-4">Quiz complete! 🎉</h2>
+            <div className="text-white p-6 flex items-center justify-center min-h-[60vh]">
+                <div className="bg-gray-800 rounded-2xl p-10 border border-gray-700 text-center max-w-md w-full shadow-xl">
+                    <div className="text-6xl mb-4">🎉</div>
+                    <h2 className="text-3xl font-bold mb-4">Quiz Complete!</h2>
                     <p className="text-gray-400 mb-2">Your score</p>
                     <p className="text-5xl font-bold text-yellow-400 mb-2">
                         {score} / {questions.length}
@@ -161,13 +164,13 @@ export default function QuizPage({ subject = 'Addition', level = 'Beginner', pro
                     <div className="flex gap-4 justify-center">
                         <button
                             onClick={handleRestart}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
                         >
                             Play Again
                         </button>
                         <button
                             onClick={() => onNavigate && onNavigate('dashboard')}
-                            className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                            className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-xl transition-colors"
                         >
                             Back to Dashboard
                         </button>
@@ -181,7 +184,7 @@ export default function QuizPage({ subject = 'Addition', level = 'Beginner', pro
      * Active quiz view.
      */
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-6">
+        <div className="text-white p-6">
             {/* Header stats: question progress, countdown, score */}
             <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700 grid grid-cols-3 gap-4 text-center">
                 <div>
@@ -246,11 +249,21 @@ export default function QuizPage({ subject = 'Addition', level = 'Beginner', pro
                 </button>
             )}
 
-            {/* Help button (the AI bot is a later step) */}
-            <button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg transition-colors flex items-center justify-center gap-2">
+            {/* Help button */}
+            <button
+                onClick={() => setShowBot(true)}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
                 <span>🤖</span>
                 <span>Need help? Ask the bot</span>
             </button>
+
+            {showBot && (
+                <BotHelper
+                    currentQuestion={question}
+                    onClose={() => setShowBot(false)}
+                />
+            )}
         </div>
     );
 }

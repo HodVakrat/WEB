@@ -1,20 +1,11 @@
 import { useState } from 'react';
 import { addProfile, editProfile, deleteProfile } from '../services/ProfileService';
 
-/*
- * Kid-friendly avatar choices. Lives only on the front: the picker below
- * forces the user to choose exactly one of these, so the server never has
- * to validate the avatar value.
- */
 const AVATAR_OPTIONS = ['🐱', '🐶', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐸', '🐵', '🐰', '🐹', '🦄', '🐲', '🐙', '🦉', '🦋', '🐝', '🐢', '🐬', '🦖', '🐳', '🐧', '🦕'];
 
 export default function ParentScreen({ parent, onEnterProfile, onLogout, onParentUpdated }) {
     const profiles = parent?.profiles ?? [];
 
-    /*
-     * Form state for adding/editing a profile.
-     * editingId: null = adding a new profile, otherwise = the profile being edited.
-     */
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formName, setFormName] = useState('');
@@ -38,10 +29,6 @@ export default function ParentScreen({ parent, onEnterProfile, onLogout, onParen
         setShowForm(true);
     };
 
-    /*
-     * Save (add or edit). On success, hand the updated parent up so the
-     * whole app refreshes, then close the form.
-     */
     const submitForm = async () => {
         if (!formName.trim()) {
             setError('Please enter a name.');
@@ -73,84 +60,111 @@ export default function ParentScreen({ parent, onEnterProfile, onLogout, onParen
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-6">
-            {/* Header: greeting + logout */}
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold">Hi, {parent?.firstName}! 👋</h1>
-                <button onClick={onLogout} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg font-bold">
-                    Logout
-                </button>
+        <div className="p-6 min-h-[80vh]">
+            {/* Welcome */}
+            <div className="text-center mb-10">
+                <h1 className="text-3xl font-bold text-white mb-2">
+                    Hi, {parent?.firstName}! 👋
+                </h1>
+                <p className="text-gray-400 text-lg">Who is learning today?</p>
             </div>
 
-            <h2 className="text-xl font-semibold mb-4 text-gray-300">Who is learning today?</h2>
-
-            {/* Profiles grid, or an empty state */}
+            {/* Profiles grid */}
             {profiles.length === 0 ? (
-                <p className="text-gray-400 mb-8">No profiles yet — create your first one below.</p>
+                <div className="text-center py-16">
+                    <div className="text-6xl mb-4">👶</div>
+                    <p className="text-gray-400 text-lg mb-2">No profiles yet</p>
+                    <p className="text-gray-500">Create your first kid's profile to get started!</p>
+                </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 mb-8">
                     {profiles.map((p) => (
-                        <div key={p._id} className="bg-gray-800 border border-gray-700 rounded-lg p-5 text-center">
-                            <div className="text-5xl mb-2">{p.avatar}</div>
-                            <p className="font-bold text-lg">{p.name}</p>
-                            <p className="text-yellow-400 text-sm mb-3">⭐ {p.coins} coins</p>
-                            <button onClick={() => onEnterProfile(p)} className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded mb-2 font-bold">
-                                Enter
+                        <div key={p._id} className="bg-gray-800 border border-gray-700 rounded-2xl p-6 text-center hover:border-blue-500/50 transition-all group">
+                            <div className="text-6xl mb-3 group-hover:scale-110 transition-transform">{p.avatar}</div>
+                            <p className="font-bold text-lg text-white mb-1">{p.name}</p>
+                            <p className="text-yellow-400 text-sm mb-4 font-semibold">⭐ {p.coins} coins</p>
+                            <button
+                                onClick={() => onEnterProfile(p)}
+                                className="w-full bg-blue-600 hover:bg-blue-700 py-2.5 rounded-xl font-bold text-white transition-colors mb-3"
+                            >
+                                Let's Go!
                             </button>
                             <div className="flex gap-2">
-                                <button onClick={() => openEdit(p)} className="flex-1 bg-gray-700 hover:bg-gray-600 py-1 rounded text-sm">Edit</button>
-                                <button onClick={() => handleDelete(p)} className="flex-1 bg-red-700 hover:bg-red-600 py-1 rounded text-sm">Delete</button>
+                                <button onClick={() => openEdit(p)} className="flex-1 bg-gray-700 hover:bg-gray-600 py-1.5 rounded-lg text-sm text-gray-300 transition-colors">
+                                    Edit
+                                </button>
+                                <button onClick={() => handleDelete(p)} className="flex-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 py-1.5 rounded-lg text-sm transition-colors">
+                                    Delete
+                                </button>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Actions: add profile + general stats (stats wired in a later step) */}
-            <div className="flex gap-4 mb-8">
-                <button onClick={openAdd} className="bg-green-600 hover:bg-green-700 px-5 py-3 rounded-lg font-bold">
-                    + Add profile
-                </button>
-                <button onClick={() => alert('In the future.')} className="bg-gray-700 hover:bg-gray-600 px-5 py-3 rounded-lg font-bold">
-                    View statistics
+            {/* Add profile button */}
+            <div className="flex justify-center mb-8">
+                <button
+                    onClick={openAdd}
+                    className="bg-green-600 hover:bg-green-700 px-8 py-3 rounded-xl font-bold text-white transition-colors flex items-center gap-2"
+                >
+                    <span className="text-xl">+</span>
+                    <span>Add Profile</span>
                 </button>
             </div>
 
-            {/* Add/Edit form */}
+            {/* Add/Edit form modal */}
             {showForm && (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md">
-                    <h3 className="text-lg font-bold mb-4">{editingId ? 'Edit profile' : 'New profile'}</h3>
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-800 border border-gray-700 rounded-2xl p-8 max-w-md w-full shadow-2xl">
+                        <h3 className="text-xl font-bold mb-6 text-white">
+                            {editingId ? 'Edit Profile' : 'New Profile'}
+                        </h3>
 
-                    <label className="block text-sm mb-1">Name</label>
-                    <input
-                        value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                        maxLength={20}
-                        className="w-full p-2 mb-4 rounded bg-gray-700 border border-gray-600 text-white"
-                    />
+                        <label className="block text-sm font-semibold text-gray-300 mb-2">Name</label>
+                        <input
+                            value={formName}
+                            onChange={(e) => setFormName(e.target.value)}
+                            maxLength={20}
+                            placeholder="Enter kid's name"
+                            className="w-full p-3 mb-5 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                        />
 
-                    <label className="block text-sm mb-2">Choose an avatar</label>
-                    <div className="grid grid-cols-8 gap-2 mb-4">
-                        {AVATAR_OPTIONS.map((emoji) => (
+                        <label className="block text-sm font-semibold text-gray-300 mb-3">Choose an avatar</label>
+                        <div className="grid grid-cols-8 gap-2 mb-6">
+                            {AVATAR_OPTIONS.map((emoji) => (
+                                <button
+                                    key={emoji}
+                                    onClick={() => setFormAvatar(emoji)}
+                                    className={`text-2xl p-1.5 rounded-lg transition-all ${formAvatar === emoji ? 'bg-blue-600 scale-110' : 'bg-gray-700 hover:bg-gray-600'}`}
+                                >
+                                    {emoji}
+                                </button>
+                            ))}
+                        </div>
+
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
+                                <p className="text-red-400 text-sm">{error}</p>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
                             <button
-                                key={emoji}
-                                onClick={() => setFormAvatar(emoji)}
-                                className={`text-2xl p-1 rounded ${formAvatar === emoji ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+                                onClick={submitForm}
+                                disabled={loading}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-xl font-bold text-white disabled:opacity-60 transition-colors"
                             >
-                                {emoji}
+                                {loading ? 'Saving...' : 'Save'}
                             </button>
-                        ))}
-                    </div>
-
-                    {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
-
-                    <div className="flex gap-2">
-                        <button onClick={submitForm} disabled={loading} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded disabled:opacity-60">
-                            {loading ? 'Saving...' : 'Save'}
-                        </button>
-                        <button onClick={() => setShowForm(false)} disabled={loading} className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded">
-                            Cancel
-                        </button>
+                            <button
+                                onClick={() => setShowForm(false)}
+                                disabled={loading}
+                                className="flex-1 bg-gray-600 hover:bg-gray-500 px-4 py-3 rounded-xl font-bold text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

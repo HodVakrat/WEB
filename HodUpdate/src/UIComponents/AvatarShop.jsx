@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { buyAvatar } from '../services/ProfileService'; 
+import { useState } from 'react';
+import { buyAvatar } from '../services/ProfileService';
 
 const AVAILABLE_AVATARS = [
-  { id: 'lion', label: 'brave lion', icon: '🦁', cost: 10 },
-  { id: 'wizard', label: 'numbers magicion', icon: '🧙‍♂️', cost: 25 },
-  { id: 'unicorn', label: 'magical unicorn', icon: '🦄', cost: 50 },
-  { id: 'dragon', label: 'algebra dragon', icon: '🐉', cost: 100 },
+  { id: 'lion', label: 'Brave Lion', icon: '🦁', cost: 10 },
+  { id: 'wizard', label: 'Number Wizard', icon: '🧙‍♂️', cost: 25 },
+  { id: 'unicorn', label: 'Magic Unicorn', icon: '🦄', cost: 50 },
+  { id: 'dragon', label: 'Algebra Dragon', icon: '🐉', cost: 100 },
 ];
 
-export default function AvatarShop({ currentProfile, onParentUpdated }) {
+export default function AvatarShop({ currentProfile, onParentUpdated, onNavigate }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,17 +18,15 @@ export default function AvatarShop({ currentProfile, onParentUpdated }) {
     setSuccess('');
 
     if (currentProfile.coins < item.cost) {
-      setError('not enough coins, keep solving quizes');
+      setError('Not enough coins! Keep solving quizzes to earn more.');
       return;
     }
 
     setLoading(true);
     try {
       const updatedParent = await buyAvatar(currentProfile._id, { avatar: item.icon, cost: item.cost });
-      
-      setSuccess(`congrats you chose ${item.label}! 🎉`);
-      
-      onParentUpdated(updatedParent); 
+      setSuccess(`Congrats! You chose ${item.label}! 🎉`);
+      onParentUpdated(updatedParent);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -37,35 +35,62 @@ export default function AvatarShop({ currentProfile, onParentUpdated }) {
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-2xl mx-auto my-8 text-white direction-rtl">
-      <h2 className="text-2xl font-bold mb-4 text-center text-yellow-400">Avatar Shop✨</h2>
-      
-      <p className="text-center mb-6 text-gray-300 font-semibold">
-        🪙 your coins: <span className="text-yellow-400 font-bold text-xl">{currentProfile.coins}</span>
-      </p>
+    <div className="p-6">
+      <div className="max-w-2xl mx-auto">
+        <h2 className="text-3xl font-bold mb-2 text-center text-white">Avatar Shop ✨</h2>
+        <p className="text-center mb-8 text-gray-400">
+          Spend your coins on awesome avatars!
+        </p>
 
-      {error && <p className="text-red-400 text-sm mb-4 text-center bg-red-900/30 p-2 rounded">{error}</p>}
-      {success && <p className="text-green-400 text-sm mb-4 text-center bg-green-900/30 p-2 rounded">{success}</p>}
+        <div className="bg-gray-800 rounded-2xl border border-gray-700 p-6 mb-6 text-center">
+          <p className="text-gray-400 text-sm mb-1">Your balance</p>
+          <p className="text-3xl font-bold text-yellow-400">⭐ {currentProfile.coins} coins</p>
+        </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {AVAILABLE_AVATARS.map((item) => {
-          const isCurrent = currentProfile.avatar === item.icon;
-          return (
-            <div key={item.id} className={`bg-gray-700 border p-4 rounded-lg text-center flex flex-col justify-between ${isCurrent ? 'border-green-500' : 'border-gray-600'}`}>
-              <div className="text-4xl mb-2">{item.icon}</div>
-              <p className="font-bold mb-1">{item.label}</p>
-              <p className="text-sm text-pink-400 mb-3 font-semibold">🪙 {item.cost} מטבעות</p>
-              
-              <button
-                onClick={() => handleBuy(item)}
-                disabled={loading || isCurrent}
-                className={`w-full py-2 rounded font-bold text-sm ${isCurrent ? 'bg-green-600 cursor-default' : 'bg-blue-600 hover:bg-blue-500 disabled:opacity-50'}`}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 text-center">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-4 text-center">
+            <p className="text-green-400 text-sm">{success}</p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {AVAILABLE_AVATARS.map((item) => {
+            const isCurrent = currentProfile.avatar === item.icon;
+            const canAfford = currentProfile.coins >= item.cost;
+            return (
+              <div
+                key={item.id}
+                className={`bg-gray-800 border-2 p-5 rounded-2xl text-center flex flex-col justify-between transition-all ${
+                  isCurrent ? 'border-green-500 bg-green-500/5' : 'border-gray-700'
+                }`}
               >
-                {isCurrent ? 'your avatar' : 'buy avatar'}
-              </button>
-            </div>
-          );
-        })}
+                <div>
+                  <div className="text-5xl mb-3">{item.icon}</div>
+                  <p className="font-bold text-white mb-1">{item.label}</p>
+                  <p className="text-sm text-yellow-400 mb-4 font-semibold">⭐ {item.cost} coins</p>
+                </div>
+                <button
+                  onClick={() => handleBuy(item)}
+                  disabled={loading || isCurrent}
+                  className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors ${
+                    isCurrent
+                      ? 'bg-green-600 text-white cursor-default'
+                      : canAfford
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {isCurrent ? '✓ Current' : canAfford ? 'Buy' : 'Not enough coins'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

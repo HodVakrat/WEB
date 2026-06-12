@@ -1,29 +1,21 @@
 import { useState, useEffect } from 'react';
 import Login from '../UsersManager/Login.jsx';
 import Register from '../UsersManager/Register.jsx';
-import ManageUsers from '../UsersManager/ManageUsers.jsx';
-import Profile from '../UsersManager/profile.jsx';
+import ParentScreen from '../UsersManager/ParentScreen.jsx';
 import MathDashboard from '../UsersManager/MathDashboard.jsx';
 import QuizPage from '../UsersManager/QuizPage.jsx';
 import HistoryPage from '../UsersManager/HistoryPage.jsx';
-import ParentScreen from '../UsersManager/ParentScreen.jsx';
-import { getParent } from '../services/AuthService.js';
 import AvatarShop from '../UIComponents/AvatarShop.jsx';
+import { getParent } from '../services/AuthService.js';
 
 function ComponentSwitcher() {
     const [activeComponent, setActiveComponent] = useState('login');
     const [quizSettings, setQuizSettings] = useState({ subject: 'Addition', level: 'Beginner' });
 
-    // Session state.
-    const [currentParent, setCurrentParent] = useState(null); // logged-in parent (no password)
-    const [activeProfile, setActiveProfile] = useState(null); // the kid currently using the app
-    const [restoring, setRestoring] = useState(true);         // checking localStorage on first load
+    const [currentParent, setCurrentParent] = useState(null);
+    const [activeProfile, setActiveProfile] = useState(null);
+    const [restoring, setRestoring] = useState(true);
 
-    /*
-     * Restore the session on load. We only store IDs in localStorage and
-     * fetch a FRESH parent from the DB (the DB is the source of truth).
-     * If the saved parent/profile no longer exists, clear and start over.
-     */
     useEffect(() => {
         const savedParentId = localStorage.getItem('parentId');
         if (!savedParentId) {
@@ -57,28 +49,24 @@ function ComponentSwitcher() {
         setActiveComponent(componentName);
     };
 
-    // Login success: store the parent + remember its id, go to the parent screen.
     const handleLogin = (parent) => {
         setCurrentParent(parent);
         localStorage.setItem('parentId', parent._id);
         setActiveComponent('parent');
     };
 
-    // Parent picked a kid: become that profile and go to the dashboard.
     const handleEnterProfile = (profile) => {
         setActiveProfile(profile);
         localStorage.setItem('activeProfileId', profile._id);
         setActiveComponent('dashboard');
     };
 
-    // Leave the kid's session, back to the parent screen.
     const handleBackToParent = () => {
         setActiveProfile(null);
         localStorage.removeItem('activeProfileId');
         setActiveComponent('parent');
     };
 
-    // Full logout: clear everything.
     const handleLogout = () => {
         setCurrentParent(null);
         setActiveProfile(null);
@@ -87,7 +75,6 @@ function ComponentSwitcher() {
         setActiveComponent('login');
     };
 
-    // After add/edit/delete profile: refresh the parent (and active profile if any).
     const handleParentUpdated = (parent) => {
         setCurrentParent(parent);
         if (activeProfile) {
@@ -95,11 +82,6 @@ function ComponentSwitcher() {
         }
     };
 
-    /*
-     * After a quiz the server returns the new wallet balance. Update both the
-     * active profile (dashboard) and the matching profile inside currentParent
-     * (so the parent screen's card is correct too).
-     */
     const handleCoinsUpdated = (newCoins) => {
         setActiveProfile((prev) => (prev ? { ...prev, coins: newCoins } : prev));
         setCurrentParent((prev) => {
@@ -113,54 +95,117 @@ function ComponentSwitcher() {
         });
     };
 
-    // While checking for a saved session, avoid flashing the login screen.
     if (restoring) {
-        return <p className="text-gray-400 italic p-6">Loading…</p>;
+        return (
+            <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-6xl mb-4 animate-bounce">🧮</div>
+                    <p className="text-gray-400 text-lg">Loading MathematiKids...</p>
+                </div>
+            </div>
+        );
     }
 
-    const components_map = {
-        'login': <Login onNavigate={handleNavigate} onLogin={handleLogin} />,
-        'register': <Register onNavigate={handleNavigate} />,
-        'parent': <ParentScreen parent={currentParent} onEnterProfile={handleEnterProfile} onLogout={handleLogout} onParentUpdated={handleParentUpdated} />,
-        'dashboard': <MathDashboard profile={activeProfile} onNavigate={handleNavigate} onBackToParent={handleBackToParent} />,
-        'quiz': <QuizPage subject={quizSettings.subject} level={quizSettings.level} profileId={activeProfile?._id} onNavigate={handleNavigate} onCoinsUpdated={handleCoinsUpdated} />,
-        'history': <HistoryPage onNavigate={handleNavigate} />,
-        'manage': <ManageUsers />,
-        'profile': <Profile />,
-        'shop': activeProfile ? (
-        <AvatarShop currentProfile={activeProfile} onParentUpdated={handleParentUpdated} />
-    ) : (
-        <p className="text-gray-400 italic">please enter to your profile first</p>
-    ),
+    const isLoggedIn = !!currentParent;
+    const isInProfile = !!activeProfile;
+
+    const renderContent = () => {
+        switch (activeComponent) {
+            case 'login':
+                return <Login onNavigate={handleNavigate} onLogin={handleLogin} />;
+            case 'register':
+                return <Register onNavigate={handleNavigate} />;
+            case 'parent':
+                return <ParentScreen parent={currentParent} onEnterProfile={handleEnterProfile} onLogout={handleLogout} onParentUpdated={handleParentUpdated} />;
+            case 'dashboard':
+                return <MathDashboard profile={activeProfile} onNavigate={handleNavigate} onBackToParent={handleBackToParent} />;
+            case 'quiz':
+                return <QuizPage subject={quizSettings.subject} level={quizSettings.level} profileId={activeProfile?._id} onNavigate={handleNavigate} onCoinsUpdated={handleCoinsUpdated} />;
+            case 'history':
+                return <HistoryPage onNavigate={handleNavigate} />;
+            case 'shop':
+                return activeProfile
+                    ? <AvatarShop currentProfile={activeProfile} onParentUpdated={handleParentUpdated} onNavigate={handleNavigate} />
+                    : <p className="text-gray-400 italic p-6">Please enter a profile first.</p>;
+            default:
+                return <Login onNavigate={handleNavigate} onLogin={handleLogin} />;
+        }
     };
 
-    const componentToShow = components_map[activeComponent] ||
-        <p className="text-gray-400 italic">No component selected.</p>;
-    const buttonStyles = "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded";
-    const navLabels = {
-        'login': 'Login',
-        'register': 'Register',
-        'parent': 'Parent',
-        'dashboard': 'Dashboard',
-        'quiz': 'Quiz',
-        'history': 'History',
-        'manage': 'Manage Users',
-        'profile': 'Profile',
-        'shop': 'Avatar Shop',
-    };
     return (
-        <div className="flex flex-col items-center p-6 font-bold rounded-md shadow-md">
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
-                {Object.keys(components_map).map(key => (
-                    <button
-                        key={key}
-                        className={`${buttonStyles} ${activeComponent === key ? 'bg-blue-800' : ''}`}
-                        onClick={() => handleNavigate(key)}>
-                        {navLabels[key]}
-                    </button>))}
-            </div>
-            <div className="bg-gray-800 p-6 rounded-md w-full max-w-4xl text-center text-white border border-gray-700">{componentToShow}</div>
-        </div>
+        <>
+            {/* Header */}
+            <header className="bg-gray-800 border-b border-gray-700 shadow-lg">
+                <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+                    <div
+                        className="flex items-center gap-3 cursor-pointer"
+                        onClick={() => handleNavigate(isInProfile ? 'dashboard' : isLoggedIn ? 'parent' : 'login')}
+                    >
+                        <span className="text-3xl">🧮</span>
+                        <h1 className="text-xl font-bold text-white">
+                            Mathemati<span className="text-blue-400">Kids</span>
+                        </h1>
+                    </div>
+
+                    {isLoggedIn && (
+                        <nav className="flex items-center gap-2">
+                            {isInProfile && (
+                                <>
+                                    <button
+                                        onClick={() => handleNavigate('dashboard')}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${activeComponent === 'dashboard' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+                                    >
+                                        Dashboard
+                                    </button>
+                                    <button
+                                        onClick={() => handleNavigate('history')}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${activeComponent === 'history' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+                                    >
+                                        History
+                                    </button>
+                                    <button
+                                        onClick={() => handleNavigate('shop')}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${activeComponent === 'shop' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+                                    >
+                                        Shop
+                                    </button>
+                                    <div className="w-px h-6 bg-gray-600 mx-1"></div>
+                                    <div className="flex items-center gap-1.5 text-sm text-yellow-400 font-bold bg-gray-700/50 px-3 py-1.5 rounded-lg">
+                                        <span>⭐</span>
+                                        <span>{activeProfile.coins}</span>
+                                    </div>
+                                    <button
+                                        onClick={handleBackToParent}
+                                        className="px-3 py-1.5 rounded-lg text-sm font-semibold text-gray-300 hover:bg-gray-700 transition-colors"
+                                    >
+                                        Switch Kid
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                onClick={handleLogout}
+                                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
+                            >
+                                Logout
+                            </button>
+                        </nav>
+                    )}
+                </div>
+            </header>
+
+            {/* Main content */}
+            <main className="flex-1">
+                <div className="max-w-6xl mx-auto">
+                    {renderContent()}
+                </div>
+            </main>
+
+            {/* Footer */}
+            <footer className="bg-gray-800 border-t border-gray-700 py-4 text-center text-gray-500 text-sm">
+                <p>&copy; 2026 MathematiKids &mdash; Making math fun for kids!</p>
+            </footer>
+        </>
     );
 }
+
 export default ComponentSwitcher;
