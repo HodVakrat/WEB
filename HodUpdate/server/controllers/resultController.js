@@ -25,7 +25,7 @@ function isInteger(n) {
  * the earned points to the profile's wallet. Returns { result, coins }.
  */
 export async function saveResult(req, res) {
-  const { profileId, score, total } = req.body;
+  const { profileId, score, total, questionLevels } = req.body;
   const subject = String(req.body.subject || '').toLowerCase();
   const level = String(req.body.level || '').toLowerCase();
 
@@ -35,7 +35,8 @@ export async function saveResult(req, res) {
   if (!SUBJECTS.includes(subject)) {
     return res.status(400).json({ error: 'Unknown subject.' });
   }
-  if (!POINTS_PER_LEVEL[level]) {
+  const validLevels = ['beginner', 'intermediate', 'advanced', 'adaptive'];
+  if (!validLevels.includes(level)) {
     return res.status(400).json({ error: 'Unknown level.' });
   }
   if (!isInteger(score) || !isInteger(total) || score < 0 || score > total) {
@@ -46,18 +47,23 @@ export async function saveResult(req, res) {
   }
 
   try {
-    // Make sure the profile exists BEFORE creating a result (avoid orphans).
     const owner = await Parent.findOne({ 'profiles._id': profileId });
     if (!owner) {
       return res.status(404).json({ error: 'Profile not found.' });
     }
 
-    const points = score * POINTS_PER_LEVEL[level];
+    let points;
+    if (level === 'adaptive' && Array.isArray(questionLevels) && questionLevels.length === total) {
+      points = questionLevels.reduce((sum, ql) => sum + (POINTS_PER_LEVEL[ql] || POINTS_PER_LEVEL.beginner), 0);
+    } else {
+      points = score * (POINTS_PER_LEVEL[level] || POINTS_PER_LEVEL.beginner);
+    }
 
-    // 1) Insert the result.
-    const result = await Result.create({ profileId, subject, level, score, total, points });
+    const result = await Result.create({
+      profileId, subject, level, score, total, points,
+      questionLevels: Array.isArray(questionLevels) ? questionLevels : [],
+    });
 
-    // 2) Atomically add the earned points to the embedded profile's wallet.
     const updatedParent = await Parent.findOneAndUpdate(
       { 'profiles._id': profileId },
       { $inc: { 'profiles.$.coins': points } },

@@ -252,6 +252,13 @@ export function generateQuestions(subject, level, count = QUESTIONS_PER_QUIZ) {
   return questions;
 }
 
+export const LEVELS = ['beginner', 'intermediate', 'advanced'];
+
+// Generate a single question for a given subject and level.
+export function generateOneQuestion(subject, level) {
+  return generateQuestion(subject, level);
+}
+
 // Check whether a chosen answer matches the question's correct answer.
 export function isCorrect(question, answer) {
   return question.correctAnswer === answer;

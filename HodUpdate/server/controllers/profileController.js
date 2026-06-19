@@ -20,7 +20,7 @@ function isNonEmptyString(value) {
  * Adds a new profile to the parent's embedded profiles array.
  */
 export async function addProfile(req, res) {
-  const { parentId, name, avatar } = req.body;
+  const { parentId, name, avatar, birthday } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(parentId)) {
     return res.status(400).json({ error: 'Invalid parent id.' });
@@ -31,13 +31,16 @@ export async function addProfile(req, res) {
   if (typeof avatar !== 'string') {
     return res.status(400).json({ error: 'Avatar is required.' });
   }
+  if (!birthday || isNaN(Date.parse(birthday))) {
+    return res.status(400).json({ error: 'A valid birthday is required.' });
+  }
 
   try {
     const parent = await Parent.findById(parentId);
     if (!parent) {
       return res.status(404).json({ error: 'Parent not found.' });
     }
-    parent.profiles.push({ name: name.trim(), avatar, coins: 0 });
+    parent.profiles.push({ name: name.trim(), avatar, birthday: new Date(birthday), coins: 0 });
     await parent.save();
     return res.status(201).json(parent);
   } catch (err) {
@@ -52,7 +55,7 @@ export async function addProfile(req, res) {
  */
 export async function editProfile(req, res) {
   const { profileId } = req.params;
-  const { name, avatar } = req.body;
+  const { name, avatar, birthday } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(profileId)) {
     return res.status(400).json({ error: 'Invalid profile id.' });
@@ -63,15 +66,19 @@ export async function editProfile(req, res) {
   if (typeof avatar !== 'string') {
     return res.status(400).json({ error: 'Avatar is required.' });
   }
+  if (!birthday || isNaN(Date.parse(birthday))) {
+    return res.status(400).json({ error: 'A valid birthday is required.' });
+  }
 
   try {
     const parent = await Parent.findOne({ 'profiles._id': profileId });
     if (!parent) {
       return res.status(404).json({ error: 'Profile not found.' });
     }
-    const profile = parent.profiles.id(profileId); // Mongoose sub-document getter
+    const profile = parent.profiles.id(profileId);
     profile.name = name.trim();
     profile.avatar = avatar;
+    profile.birthday = new Date(birthday);
     await parent.save();
     return res.status(200).json(parent);
   } catch (err) {

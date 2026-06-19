@@ -20,7 +20,7 @@ export default function Profile() {
     };
 
     return (
-        <div className="bg-gray-800 p-8 rounded shadow-md w-96 justify-self-center justify-items-center mx-auto my-16 text-white border border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-8 rounded shadow-md w-96 justify-self-center justify-items-center mx-auto my-16 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold mb-6 text-center">User Profile</h2>
             <form id="profileForm">
                 <LabeledInput label="Username" type="text" disabled={true} value={user.username} />
