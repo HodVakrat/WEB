@@ -23,11 +23,11 @@ async function request(url, options = {}) {
 }
 
 // Save a finished quiz. Resolves to { result, coins } (coins = new wallet balance).
-export function saveQuizResult({ profileId, subject, level, score, total }) {
+export function saveQuizResult({ profileId, subject, level, score, total, questionLevels }) {
   return request(`${API_BASE}/results`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ profileId, subject, level, score, total }),
+    body: JSON.stringify({ profileId, subject, level, score, total, questionLevels }),
   });
 }
 

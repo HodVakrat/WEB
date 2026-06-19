@@ -12,7 +12,8 @@ import mongoose from 'mongoose';
 const resultSchema = new mongoose.Schema({
   profileId: { type: mongoose.Schema.Types.ObjectId, required: true },
   subject:   { type: String, required: true },
-  level:     { type: String, required: true, enum: ['beginner', 'intermediate', 'advanced'] },
+  level:     { type: String, required: true, enum: ['beginner', 'intermediate', 'advanced', 'adaptive'] },
+  questionLevels: { type: [String], default: [] },
   score:     { type: Number, required: true, min: 0 },
   total:     { type: Number, required: true, min: 0 },
   points:    { type: Number, required: true, min: 0 },

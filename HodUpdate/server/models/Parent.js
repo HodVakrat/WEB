@@ -15,9 +15,10 @@ import mongoose from 'mongoose';
  * coins = the spendable wallet balance (starts at 0).
  */
 const profileSchema = new mongoose.Schema({
-  name:   { type: String, required: true, trim: true, maxlength: 20 },
-  avatar: { type: String, required: true },
-  coins:  { type: Number, default: 0 },
+  name:     { type: String, required: true, trim: true, maxlength: 20 },
+  avatar:   { type: String, required: true },
+  birthday: { type: Date, required: true },
+  coins:    { type: Number, default: 0 },
 });
 
 /*

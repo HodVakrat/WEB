@@ -24,20 +24,20 @@ async function request(url, options) {
 }
 
 // Add a profile to a parent. Resolves to the updated parent.
-export function addProfile(parentId, { name, avatar }) {
+export function addProfile(parentId, { name, avatar, birthday }) {
   return request(`${API_BASE}/profiles`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ parentId, name, avatar }),
+    body: JSON.stringify({ parentId, name, avatar, birthday }),
   });
 }
 
 // Edit an existing profile. Resolves to the updated parent.
-export function editProfile(profileId, { name, avatar }) {
+export function editProfile(profileId, { name, avatar, birthday }) {
   return request(`${API_BASE}/profiles/${profileId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, avatar }),
+    body: JSON.stringify({ name, avatar, birthday }),
   });
 }
 

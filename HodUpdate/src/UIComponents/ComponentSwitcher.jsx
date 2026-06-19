@@ -7,14 +7,18 @@ import QuizPage from '../UsersManager/QuizPage.jsx';
 import HistoryPage from '../UsersManager/HistoryPage.jsx';
 import AvatarShop from '../UIComponents/AvatarShop.jsx';
 import { getParent } from '../services/AuthService.js';
+import { useTheme } from '../ThemeContext.jsx';
 
 function ComponentSwitcher() {
     const [activeComponent, setActiveComponent] = useState('login');
-    const [quizSettings, setQuizSettings] = useState({ subject: 'Addition', level: 'Beginner' });
+    const [quizSettings, setQuizSettings] = useState({ subject: 'Addition' });
+    const [historyProfile, setHistoryProfile] = useState({ profileId: null, profileName: '' });
 
     const [currentParent, setCurrentParent] = useState(null);
     const [activeProfile, setActiveProfile] = useState(null);
     const [restoring, setRestoring] = useState(true);
+
+    const { dark, toggleTheme } = useTheme();
 
     useEffect(() => {
         const savedParentId = localStorage.getItem('parentId');
@@ -45,7 +49,11 @@ function ComponentSwitcher() {
     }, []);
 
     const handleNavigate = (componentName, settings = null) => {
-        if (settings) setQuizSettings(settings);
+        if (componentName === 'history' && settings) {
+            setHistoryProfile(settings);
+        } else if (settings) {
+            setQuizSettings(settings);
+        }
         setActiveComponent(componentName);
     };
 
@@ -100,7 +108,7 @@ function ComponentSwitcher() {
             <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
                     <div className="text-6xl mb-4 animate-bounce">🧮</div>
-                    <p className="text-gray-400 text-lg">Loading MathematiKids...</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-lg">Loading MathematiKids...</p>
                 </div>
             </div>
         );
@@ -116,17 +124,17 @@ function ComponentSwitcher() {
             case 'register':
                 return <Register onNavigate={handleNavigate} />;
             case 'parent':
-                return <ParentScreen parent={currentParent} onEnterProfile={handleEnterProfile} onLogout={handleLogout} onParentUpdated={handleParentUpdated} />;
+                return <ParentScreen parent={currentParent} onEnterProfile={handleEnterProfile} onLogout={handleLogout} onParentUpdated={handleParentUpdated} onNavigate={handleNavigate} />;
             case 'dashboard':
                 return <MathDashboard profile={activeProfile} onNavigate={handleNavigate} onBackToParent={handleBackToParent} />;
             case 'quiz':
-                return <QuizPage subject={quizSettings.subject} level={quizSettings.level} profileId={activeProfile?._id} onNavigate={handleNavigate} onCoinsUpdated={handleCoinsUpdated} />;
+                return <QuizPage subject={quizSettings.subject} profileId={activeProfile?._id} avatar={activeProfile?.avatar} onNavigate={handleNavigate} onCoinsUpdated={handleCoinsUpdated} />;
             case 'history':
-                return <HistoryPage onNavigate={handleNavigate} />;
+                return <HistoryPage profileId={historyProfile.profileId} profileName={historyProfile.profileName} onNavigate={handleNavigate} />;
             case 'shop':
                 return activeProfile
                     ? <AvatarShop currentProfile={activeProfile} onParentUpdated={handleParentUpdated} onNavigate={handleNavigate} />
-                    : <p className="text-gray-400 italic p-6">Please enter a profile first.</p>;
+                    : <p className="text-gray-500 dark:text-gray-400 italic p-6">Please enter a profile first.</p>;
             default:
                 return <Login onNavigate={handleNavigate} onLogin={handleLogin} />;
         }
@@ -135,61 +143,60 @@ function ComponentSwitcher() {
     return (
         <>
             {/* Header */}
-            <header className="bg-gray-800 border-b border-gray-700 shadow-lg">
+            <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-lg">
                 <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
                     <div
                         className="flex items-center gap-3 cursor-pointer"
                         onClick={() => handleNavigate(isInProfile ? 'dashboard' : isLoggedIn ? 'parent' : 'login')}
                     >
                         <span className="text-3xl">🧮</span>
-                        <h1 className="text-xl font-bold text-white">
-                            Mathemati<span className="text-blue-400">Kids</span>
+                        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                            Mathemati<span className="text-blue-500 dark:text-blue-400">Kids</span>
                         </h1>
                     </div>
 
-                    {isLoggedIn && (
-                        <nav className="flex items-center gap-2">
-                            {isInProfile && (
-                                <>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+                        >
+                            {dark ? '☀️' : '🌙'}
+                        </button>
+
+                        {isLoggedIn && (
+                            <nav className="flex items-center gap-2">
+                                {isInProfile ? (
+                                    <>
+                                        <button
+                                            onClick={handleBackToParent}
+                                            className="px-4 py-1.5 rounded-lg text-sm font-bold bg-green-600 hover:bg-green-700 text-white transition-colors"
+                                        >
+                                            ✓ Finish
+                                        </button>
+                                        <button
+                                            onClick={() => handleNavigate('shop')}
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${activeComponent === 'shop' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                        >
+                                            Shop
+                                        </button>
+                                        <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                                        <div className="flex items-center gap-1.5 text-sm text-yellow-500 dark:text-yellow-400 font-bold bg-yellow-50 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg">
+                                            <span>⭐</span>
+                                            <span>{activeProfile.coins}</span>
+                                        </div>
+                                    </>
+                                ) : (
                                     <button
-                                        onClick={() => handleNavigate('dashboard')}
-                                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${activeComponent === 'dashboard' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+                                        onClick={handleLogout}
+                                        className="px-3 py-1.5 rounded-lg text-sm font-semibold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                                     >
-                                        Dashboard
+                                        Logout
                                     </button>
-                                    <button
-                                        onClick={() => handleNavigate('history')}
-                                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${activeComponent === 'history' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
-                                    >
-                                        History
-                                    </button>
-                                    <button
-                                        onClick={() => handleNavigate('shop')}
-                                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${activeComponent === 'shop' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
-                                    >
-                                        Shop
-                                    </button>
-                                    <div className="w-px h-6 bg-gray-600 mx-1"></div>
-                                    <div className="flex items-center gap-1.5 text-sm text-yellow-400 font-bold bg-gray-700/50 px-3 py-1.5 rounded-lg">
-                                        <span>⭐</span>
-                                        <span>{activeProfile.coins}</span>
-                                    </div>
-                                    <button
-                                        onClick={handleBackToParent}
-                                        className="px-3 py-1.5 rounded-lg text-sm font-semibold text-gray-300 hover:bg-gray-700 transition-colors"
-                                    >
-                                        Switch Kid
-                                    </button>
-                                </>
-                            )}
-                            <button
-                                onClick={handleLogout}
-                                className="px-3 py-1.5 rounded-lg text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
-                            >
-                                Logout
-                            </button>
-                        </nav>
-                    )}
+                                )}
+                            </nav>
+                        )}
+                    </div>
                 </div>
             </header>
 
@@ -201,7 +208,7 @@ function ComponentSwitcher() {
             </main>
 
             {/* Footer */}
-            <footer className="bg-gray-800 border-t border-gray-700 py-4 text-center text-gray-500 text-sm">
+            <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 text-center text-gray-400 dark:text-gray-500 text-sm">
                 <p>&copy; 2026 MathematiKids &mdash; Making math fun for kids!</p>
             </footer>
         </>

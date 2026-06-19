@@ -6,20 +6,27 @@ const API_KEY = import.meta.env.VITE_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-const SYSTEM_PROMPT = `You are a friendly and kind math helper for young children. Your name is "MathMagic".
+const SYSTEM_PROMPT = `You are a friendly and kind math helper for young children. Your name is "MathBuddy".
 Important rules:
 - Use simple and warm language suitable for young children
 - Use emojis to make it fun 🌟
 - When asked for a hint: give only a small hint that helps the child think on their own, without giving away the answer!
 - When asked for a solution: explain the solution step by step in a simple and encouraging way
 - Always encourage the child and tell them they are doing a great job
-- Keep your answers short and clear, don't make them too long
+- Keep your answers short (2-3 sentences max)
 - Always answer in English`;
 
-export default function BotHelper({ currentQuestion, onClose }) {
+export default function BotHelper({ avatar, currentQuestion }) {
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [hintGiven, setHintGiven] = useState(false);
+    const [prevQuestion, setPrevQuestion] = useState(currentQuestion?.question);
+
+    if (currentQuestion?.question !== prevQuestion) {
+        setPrevQuestion(currentQuestion?.question);
+        setMessages([]);
+        setHintGiven(false);
+    }
 
     const askBot = async (requestType) => {
         setIsLoading(true);
@@ -42,97 +49,85 @@ Explain the solution step by step in a simple and encouraging way for a young ch
             const text = result.response.text();
             setMessages((prev) => [
                 ...prev,
-                { role: requestType === 'hint' ? 'Hint' : 'Solution', text },
+                { role: requestType === 'hint' ? 'hint' : 'solution', text },
             ]);
         } catch (error) {
             setMessages((prev) => [
                 ...prev,
-                { role: 'Error', text: 'Oops! Something went wrong 😅 Try again!' },
+                { role: 'error', text: 'Oops! Something went wrong 😅 Try again!' },
             ]);
         } finally {
             setIsLoading(false);
         }
     };
 
+    const latestMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-2xl border-2 border-purple-500 w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
-                {/* Header */}
-                <div className="bg-purple-600 rounded-t-2xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <span className="text-3xl">🤖</span>
-                        <div>
-                            <h3 className="text-white font-bold text-lg">MathMagic</h3>
-                            <p className="text-purple-200 text-sm">Your smart helper!</p>
+        <div className="flex flex-col items-center gap-3">
+            {/* Speech bubble */}
+            <div className="relative w-full">
+                <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl p-4 shadow-lg min-h-[80px] relative">
+                    {isLoading ? (
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                            <span className="animate-bounce text-lg">🤔</span>
+                            <span className="text-sm">Thinking...</span>
                         </div>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="text-white hover:text-red-300 text-2xl font-bold transition-colors"
-                    >
-                        ✕
-                    </button>
-                </div>
-
-                {/* Question display */}
-                <div className="bg-gray-700 mx-4 mt-4 p-3 rounded-lg text-center">
-                    <p className="text-gray-400 text-sm">Your question:</p>
-                    <p className="text-white text-2xl font-bold">{currentQuestion.question}</p>
-                </div>
-
-                {/* Messages area */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {messages.length === 0 && !isLoading && (
-                        <div className="text-center text-gray-400 py-6">
-                            <p className="text-4xl mb-2">👋</p>
-                            <p>Hi! I'm MathMagic!</p>
-                            <p>I'm here to help you 😊</p>
+                    ) : latestMessage ? (
+                        <div className="text-sm text-gray-800 dark:text-gray-100 prose prose-sm dark:prose-invert max-w-none">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                                <span>{latestMessage.role === 'hint' ? '💡' : latestMessage.role === 'solution' ? '✅' : '⚠️'}</span>
+                                <span className="text-xs font-bold text-purple-500 dark:text-purple-400 uppercase">{latestMessage.role}</span>
+                            </div>
+                            <ReactMarkdown>{latestMessage.text}</ReactMarkdown>
                         </div>
+                    ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                            Hi! I'm your buddy! 👋<br />Need help? Click below!
+                        </p>
                     )}
-
-                    {messages.map((msg, i) => (
-                        <div key={i} className="bg-gray-700 rounded-xl p-4 border border-gray-600">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span>{msg.role === 'Hint' ? '💡' : msg.role === 'Solution' ? '✅' : '⚠️'}</span>
-                                <span className="text-purple-300 font-bold text-sm">{msg.role}</span>
-                            </div>
-                            <div className="text-gray-100 prose prose-invert prose-sm max-w-none">
-                                <ReactMarkdown>{msg.text}</ReactMarkdown>
-                            </div>
-                        </div>
-                    ))}
-
-                    {isLoading && (
-                        <div className="text-center py-4">
-                            <div className="inline-flex items-center gap-2 bg-gray-700 rounded-full px-5 py-3">
-                                <span className="animate-bounce">🤔</span>
-                                <span className="text-gray-300">MathMagic is thinking...</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Action buttons */}
-                <div className="p-4 border-t border-gray-700 flex gap-3">
-                    <button
-                        onClick={() => askBot('hint')}
-                        disabled={isLoading}
-                        className="flex-1 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-gray-900 font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
-                    >
-                        <span>💡</span>
-                        <span>Give me a hint</span>
-                    </button>
-                    <button
-                        onClick={() => askBot('solution')}
-                        disabled={isLoading || !hintGiven}
-                        className="flex-1 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
-                        title={!hintGiven ? 'Try a hint first!' : ''}
-                    >
-                        <span>✅</span>
-                        <span>Show solution</span>
-                    </button>
+                    {/* Triangle pointer */}
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-gray-700 border-b border-r border-gray-200 dark:border-gray-600 rotate-45"></div>
                 </div>
             </div>
+
+            {/* Avatar character */}
+            <div className="text-6xl animate-buddy-idle select-none">
+                {avatar || '🤖'}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-2 w-full">
+                <button
+                    onClick={() => askBot('hint')}
+                    disabled={isLoading}
+                    className="flex-1 bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 text-gray-900 font-bold py-2 px-3 rounded-xl transition-colors text-sm flex items-center justify-center gap-1"
+                >
+                    <span>💡</span>
+                    <span>Hint</span>
+                </button>
+                <button
+                    onClick={() => askBot('solution')}
+                    disabled={isLoading || !hintGiven}
+                    className="flex-1 bg-green-500 hover:bg-green-400 disabled:opacity-50 text-white font-bold py-2 px-3 rounded-xl transition-colors text-sm flex items-center justify-center gap-1"
+                    title={!hintGiven ? 'Try a hint first!' : ''}
+                >
+                    <span>✅</span>
+                    <span>Answer</span>
+                </button>
+            </div>
+
+            {/* Scroll through previous messages */}
+            {messages.length > 1 && (
+                <div className="w-full max-h-32 overflow-y-auto space-y-2">
+                    {messages.slice(0, -1).map((msg, i) => (
+                        <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-xs text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-700">
+                            <span className="font-bold text-purple-500 dark:text-purple-400 uppercase mr-1">{msg.role}:</span>
+                            <span>{msg.text.length > 80 ? msg.text.slice(0, 80) + '...' : msg.text}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
