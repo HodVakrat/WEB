@@ -4,7 +4,12 @@ import ReactMarkdown from 'react-markdown';
 
 const API_KEY = import.meta.env.VITE_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+// Preferred model first, then progressively lighter fallbacks. On the free tier
+// gemini-2.5-flash is frequently throttled (503), so we fall back to the -lite
+// models, which have far more available free-tier capacity.
+const MODEL_CHAIN = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest'];
+const models = MODEL_CHAIN.map((name) => genAI.getGenerativeModel({ model: name }));
 
 const SYSTEM_PROMPT = `You are a friendly and kind math helper for young children. Your name is "MathBuddy".
 Important rules:
@@ -15,6 +20,42 @@ Important rules:
 - Always encourage the child and tell them they are doing a great job
 - Keep your answers short (2-3 sentences max)
 - Always answer in English`;
+
+// gemini-2.5-flash on the free tier intermittently returns 503 UNAVAILABLE
+// ("high demand") or 429 RESOURCE_EXHAUSTED. These are transient — a single
+// attempt fails often, but a retry usually succeeds.
+function isTransientOverload(err) {
+    const status = err?.status ?? err?.response?.status;
+    if (status === 503 || status === 429) return true;
+    const msg = String(err?.message || err || '').toLowerCase();
+    return /503|429|unavailable|overloaded|high demand|resource_exhausted|rate limit/.test(msg);
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Try each model in MODEL_CHAIN. For each, retry a couple of times on transient
+// overload (503/429) before falling back to the next, lighter model. Non-transient
+// errors (bad key, invalid request) fail fast so they surface for debugging.
+async function generateWithRetry(prompt, { retriesPerModel = 2, baseDelay = 700 } = {}) {
+    let lastErr;
+    for (const m of models) {
+        for (let attempt = 0; attempt <= retriesPerModel; attempt++) {
+            try {
+                const result = await m.generateContent(prompt);
+                return result.response.text();
+            } catch (err) {
+                lastErr = err;
+                if (!isTransientOverload(err)) throw err; // real error → stop
+                if (attempt < retriesPerModel) {
+                    await sleep(baseDelay * 2 ** attempt); // 0.7s, 1.4s
+                    continue;
+                }
+                // exhausted retries for this model → fall back to the next
+            }
+        }
+    }
+    throw lastErr;
+}
 
 export default function BotHelper({ avatar, currentQuestion, questionNumber, paused, onPause, onResume }) {
     const [messages, setMessages] = useState([]);
@@ -50,16 +91,25 @@ Explain the solution step by step in a simple and encouraging way for a young ch
         const fullPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}`;
 
         try {
-            const result = await model.generateContent(fullPrompt);
-            const text = result.response.text();
+            const text = await generateWithRetry(fullPrompt);
             setMessages((prev) => [
                 ...prev,
                 { role: requestType === 'hint' ? 'hint' : 'solution', text },
             ]);
-        } catch {
+        } catch (err) {
+            // Surface the real cause instead of swallowing it — the free tier
+            // frequently returns transient 503 (high demand) / 429 (quota) for
+            // gemini-2.5-flash, which is otherwise invisible to debugging.
+            console.error('Gemini request failed:', err);
+            const overloaded = isTransientOverload(err);
             setMessages((prev) => [
                 ...prev,
-                { role: 'error', text: 'Oops! Something went wrong 😅 Try again!' },
+                {
+                    role: 'error',
+                    text: overloaded
+                        ? 'I\'m a bit busy right now 😅 Give me a moment and try again!'
+                        : 'Oops! Something went wrong 😅 Try again!',
+                },
             ]);
         } finally {
             setIsLoading(false);
@@ -72,7 +122,7 @@ Explain the solution step by step in a simple and encouraging way for a young ch
         <div className="flex flex-col items-center gap-3">
             {/* Speech bubble */}
             <div className="relative w-full">
-                <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl p-4 shadow-lg min-h-[80px] relative">
+                <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl p-4 shadow-lg min-h-20 relative">
                     {isLoading ? (
                         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                             <span className="animate-bounce text-lg">🤔</span>
