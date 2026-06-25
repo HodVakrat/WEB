@@ -10,7 +10,7 @@
 
 // Base URL of the Express API. CORS on the server lets the browser call this
 // different origin directly (no Vite proxy). In production this would change.
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 /*
  * Small helper: POST a JSON body, parse the reply, and throw a readable
