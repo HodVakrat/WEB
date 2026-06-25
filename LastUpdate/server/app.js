@@ -45,10 +45,21 @@ app.use('/api', resultRoutes);
 
 /*
  * Start: connect to the DB first, then begin listening.
+ * On Vercel the connection happens on the first request (lazy init).
+ * Locally we connect immediately and start the server.
  */
-await connectDB();
+let dbConnected = false;
+app.use(async (req, res, next) => {
+  if (!dbConnected) {
+    await connectDB();
+    dbConnected = true;
+  }
+  next();
+});
 
 if (!process.env.VERCEL) {
+  await connectDB();
+  dbConnected = true;
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
   });
