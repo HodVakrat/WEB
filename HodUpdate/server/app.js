@@ -22,7 +22,9 @@ const PORT = 5000;
  * cors()         - allow the React dev server to call this API.
  * express.json() - parse JSON request bodies into req.body.
  */
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+}));
 app.use(express.json());
 
 /*
@@ -43,8 +45,14 @@ app.use('/api', resultRoutes);
 
 /*
  * Start: connect to the DB first, then begin listening.
+ * When running on Vercel (serverless), we export the app instead of listening.
  */
 await connectDB();
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;

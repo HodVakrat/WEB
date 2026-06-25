@@ -11,7 +11,7 @@ import mongoose from 'mongoose';
 
 // Local MongoDB server + database name. The DB/collections already exist
 // (created in Compass), but Mongo would also create them on first write.
-const MONGO_URL = 'mongodb://localhost:27017/mathematikids';
+const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/mathematikids';
 
 export async function connectDB() {
   try {
