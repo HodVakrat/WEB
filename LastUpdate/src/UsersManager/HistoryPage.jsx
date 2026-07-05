@@ -1,6 +1,126 @@
 import { useState, useEffect } from 'react';
 import { getResults } from '../services/ResultService';
 
+/*
+ * ResultsChart
+ * ------------------------------------------------------------------
+ * Lightweight inline SVG line chart of the last 10 quizzes' score
+ * percentage over time (oldest -> newest, left -> right). Takes results
+ * newest-first (as the API returns them) and plots at most the latest 10.
+ * No charting library — kept dependency-free and styled to match the page.
+ * ------------------------------------------------------------------
+ */
+function ResultsChart({ results }) {
+    // results are newest-first; take the latest 10 and flip to chronological.
+    const data = results
+        .slice(0, 10)
+        .map((r) => ({
+            pct: r.total > 0 ? Math.round((r.score / r.total) * 100) : 0,
+            score: r.score,
+            total: r.total,
+            subject: r.subject,
+            date: r.date,
+        }))
+        .reverse();
+
+    if (data.length === 0) return null;
+
+    // viewBox coordinate system (scales responsively to the container width).
+    const W = 620;
+    const H = 220;
+    const padL = 34;
+    const padR = 14;
+    const padT = 16;
+    const padB = 34;
+    const innerW = W - padL - padR;
+    const innerH = H - padT - padB;
+    const n = data.length;
+
+    const xAt = (i) => (n === 1 ? padL + innerW / 2 : padL + (i * innerW) / (n - 1));
+    const yAt = (pct) => padT + innerH - (pct / 100) * innerH;
+
+    const pointColor = (pct) => (pct >= 80 ? '#22c55e' : pct >= 60 ? '#eab308' : '#ef4444');
+
+    const gridLines = [0, 25, 50, 75, 100];
+    const linePath = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xAt(i)} ${yAt(d.pct)}`).join(' ');
+    const areaPath =
+        `M ${xAt(0)} ${yAt(0)} ` +
+        data.map((d, i) => `L ${xAt(i)} ${yAt(d.pct)}`).join(' ') +
+        ` L ${xAt(n - 1)} ${yAt(0)} Z`;
+
+    const shortDate = (dateStr) => {
+        const d = new Date(dateStr);
+        return `${d.getMonth() + 1}/${d.getDate()}`;
+    };
+
+    return (
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Last 10 quiz scores">
+            <defs>
+                <linearGradient id="results-area" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.28" />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                </linearGradient>
+            </defs>
+
+            {/* Horizontal grid + Y-axis percentage labels */}
+            {gridLines.map((g) => (
+                <g key={g}>
+                    <line
+                        x1={padL}
+                        y1={yAt(g)}
+                        x2={W - padR}
+                        y2={yAt(g)}
+                        className="stroke-gray-200 dark:stroke-gray-700"
+                        strokeWidth="1"
+                    />
+                    <text
+                        x={padL - 8}
+                        y={yAt(g) + 3}
+                        textAnchor="end"
+                        className="fill-gray-400 dark:fill-gray-500"
+                        fontSize="10"
+                    >
+                        {g}%
+                    </text>
+                </g>
+            ))}
+
+            {/* Area under the line (only meaningful with 2+ points) */}
+            {n > 1 && <path d={areaPath} fill="url(#results-area)" />}
+
+            {/* The trend line */}
+            {n > 1 && (
+                <path
+                    d={linePath}
+                    fill="none"
+                    className="stroke-blue-500 dark:stroke-blue-400"
+                    strokeWidth="2.5"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                />
+            )}
+
+            {/* Data points + x-axis date labels */}
+            {data.map((d, i) => (
+                <g key={i}>
+                    <circle cx={xAt(i)} cy={yAt(d.pct)} r="4.5" fill={pointColor(d.pct)} stroke="white" strokeWidth="1.5">
+                        <title>{`${d.score}/${d.total} (${d.pct}%) — ${shortDate(d.date)}`}</title>
+                    </circle>
+                    <text
+                        x={xAt(i)}
+                        y={H - 12}
+                        textAnchor="middle"
+                        className="fill-gray-400 dark:fill-gray-500"
+                        fontSize="10"
+                    >
+                        {shortDate(d.date)}
+                    </text>
+                </g>
+            ))}
+        </svg>
+    );
+}
+
 export default function HistoryPage({ profileId, profileName, onNavigate }) {
     const [filterSubject, setFilterSubject] = useState('all');
     const [results, setResults] = useState([]);
@@ -117,6 +237,20 @@ export default function HistoryPage({ profileId, profileName, onNavigate }) {
                                     </button>
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {/* Progress Graph — last 10 quizzes for the selected subject */}
+                    {filteredResults.length > 0 && (
+                        <div className="mb-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+                            <div className="flex items-baseline justify-between mb-3 flex-wrap gap-1">
+                                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                                    LAST {Math.min(filteredResults.length, 10)} QUIZZES ·{' '}
+                                    {filterSubject === 'all' ? 'ALL SUBJECTS' : capitalize(filterSubject).toUpperCase()}
+                                </h3>
+                                <span className="text-xs text-gray-400 dark:text-gray-500">score % over time</span>
+                            </div>
+                            <ResultsChart results={filteredResults} />
                         </div>
                     )}
 
