@@ -6,7 +6,7 @@
  * URLs. Every function is async (returns a Promise).
  * ------------------------------------------------------------------
  */
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 async function request(url, options = {}) {
   let response;
@@ -22,12 +22,16 @@ async function request(url, options = {}) {
   return data;
 }
 
-// Save a finished quiz. Resolves to { result, coins } (coins = new wallet balance).
-export function saveQuizResult({ profileId, subject, level, score, total, questionLevels, correctLevels }) {
+/*
+ * Save a finished quiz. Resolves to { result, coins } (coins = new wallet balance).
+ * correctLevels   = levels of correct answers WITHOUT bot help (these earn coins).
+ * assistedCorrect = number of correct answers WITH bot help (validated, no coins).
+ */
+export function saveQuizResult({ profileId, subject, level, score, total, questionLevels, correctLevels, assistedCorrect }) {
   return request(`${API_BASE}/results`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ profileId, subject, level, score, total, questionLevels, correctLevels }),
+    body: JSON.stringify({ profileId, subject, level, score, total, questionLevels, correctLevels, assistedCorrect }),
   });
 }
 

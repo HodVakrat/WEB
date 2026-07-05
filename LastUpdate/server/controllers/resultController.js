@@ -28,6 +28,10 @@ export async function saveResult(req, res) {
   const { profileId, score, total, questionLevels, correctLevels } = req.body;
   const subject = String(req.body.subject || '').toLowerCase();
   const level = String(req.body.level || '').toLowerCase();
+  // assistedCorrect = correct answers that used bot help (they earn NO coins).
+  // Optional for backward compatibility: a client loaded before this feature
+  // shipped sends no such field — treat missing as 0 instead of rejecting.
+  const assistedCorrect = req.body.assistedCorrect === undefined ? 0 : req.body.assistedCorrect;
 
   if (!mongoose.Types.ObjectId.isValid(profileId)) {
     return res.status(400).json({ error: 'Invalid profile id.' });
@@ -45,12 +49,16 @@ export async function saveResult(req, res) {
   if (total !== QUIZ_LENGTH) {
     return res.status(400).json({ error: `A quiz must have exactly ${QUIZ_LENGTH} questions.` });
   }
-  // correctLevels = the difficulty of each correctly-answered question. The server
-  // does NOT trust score alone: the array length must agree with score, and every
-  // entry must be a real difficulty. Coins are derived from this array.
+  // correctLevels = the difficulty of each correct answer WITHOUT bot help —
+  // only these earn coins. The server does NOT trust score alone: unassisted
+  // (correctLevels.length) + assisted (assistedCorrect) must add up exactly to
+  // score, and every entry must be a real difficulty.
+  if (!isInteger(assistedCorrect) || assistedCorrect < 0) {
+    return res.status(400).json({ error: 'Invalid assisted-answer count.' });
+  }
   if (
     !Array.isArray(correctLevels) ||
-    correctLevels.length !== score ||
+    correctLevels.length + assistedCorrect !== score ||
     !correctLevels.every((l) => POINTS_PER_LEVEL[l] !== undefined)
   ) {
     return res.status(400).json({ error: 'Invalid correct-answer levels.' });
@@ -62,12 +70,12 @@ export async function saveResult(req, res) {
       return res.status(404).json({ error: 'Profile not found.' });
     }
 
-    // Coins = sum of the difficulty of the CORRECTLY-answered questions only.
-    // A wrong (or timed-out) answer contributes nothing.
+    // Coins = sum of the difficulty of correct answers WITHOUT bot help only.
+    // Wrong, timed-out, and bot-assisted answers all contribute nothing.
     const points = correctLevels.reduce((sum, ql) => sum + POINTS_PER_LEVEL[ql], 0);
 
     const result = await Result.create({
-      profileId, subject, level, score, total, points,
+      profileId, subject, level, score, total, points, assistedCorrect,
       questionLevels: Array.isArray(questionLevels) ? questionLevels : [],
     });
 

@@ -6,7 +6,7 @@
  * its state. The only place on the front that knows the profile URLs.
  * ------------------------------------------------------------------
  */
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Shared helper: run a request, parse the reply, throw a readable error.
 async function request(url, options) {
