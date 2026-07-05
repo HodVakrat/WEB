@@ -69,6 +69,17 @@ export default function QuizPage({ subject = 'Addition', profileId, avatar, onNa
     const [animation, setAnimation] = useState(null);
     const [paused, setPaused] = useState(false);
 
+    /*
+     * Bot-help tracking ("no coins on assisted questions"):
+     * helpUsed        - the kid confirmed Hint/Answer on the CURRENT question,
+     *                   so a correct answer here earns no coins. Resets per question.
+     * assistedCorrect - how many correct answers in this quiz used help. Sent to
+     *                   the server so it can validate score without awarding coins
+     *                   for these answers.
+     */
+    const [helpUsed, setHelpUsed] = useState(false);
+    const [assistedCorrect, setAssistedCorrect] = useState(0);
+
     const currentLevel = LEVELS[levelIndex];
     const locked = selectedAnswer !== null || timedOut;
     const animating = animation !== null;
@@ -94,13 +105,13 @@ export default function QuizPage({ subject = 'Addition', profileId, avatar, onNa
         if (!finished || saved) return;
         setSaved(true);
         if (!profileId) return;
-        saveQuizResult({ profileId, subject, level: 'adaptive', score, total: QUESTIONS_PER_QUIZ, questionLevels, correctLevels })
+        saveQuizResult({ profileId, subject, level: 'adaptive', score, total: QUESTIONS_PER_QUIZ, questionLevels, correctLevels, assistedCorrect })
             .then(({ result, coins }) => {
                 setEarned(result.points);
                 onCoinsUpdated && onCoinsUpdated(coins);
             })
             .catch((err) => console.error('Failed to save result:', err.message));
-    }, [finished, saved, profileId, subject, score, onCoinsUpdated, questionLevels, correctLevels]);
+    }, [finished, saved, profileId, subject, score, onCoinsUpdated, questionLevels, correctLevels, assistedCorrect]);
 
     const handleAnswerClick = (answer) => {
         if (locked || paused) return;
@@ -112,9 +123,19 @@ export default function QuizPage({ subject = 'Addition', profileId, avatar, onNa
 
         if (correct) {
             setScore((prev) => prev + 1);
-            // Record the difficulty of THIS correctly-answered question so the
-            // server can award coins by the level of correct answers only.
-            setCorrectLevels((prev) => [...prev, currentLevel]);
+            /*
+             * Coins are earned only for correct answers WITHOUT bot help:
+             * - no help  -> record the question's difficulty in correctLevels
+             *               (the server sums coins from this array).
+             * - help used -> count it in assistedCorrect instead, so the server
+             *               can still validate the score but awards no coins.
+             * Score, streak, and the adaptive level are NOT affected by help.
+             */
+            if (helpUsed) {
+                setAssistedCorrect((prev) => prev + 1);
+            } else {
+                setCorrectLevels((prev) => [...prev, currentLevel]);
+            }
             newStreak = streak >= 0 ? streak + 1 : 1;
             setAnimation({ type: 'correct', ...pickRandom(CORRECT_MESSAGES) });
         } else {
@@ -146,6 +167,7 @@ export default function QuizPage({ subject = 'Addition', profileId, avatar, onNa
         setSelectedAnswer(null);
         setTimedOut(false);
         setPaused(false);
+        setHelpUsed(false);
         setQuestionLevels((prev) => [...prev, nextLevel]);
         setTimeLeft(TIME_LIMITS[nextLevel]);
     };
@@ -166,6 +188,8 @@ export default function QuizPage({ subject = 'Addition', profileId, avatar, onNa
         setTimeLeft(TIME_LIMITS[LEVELS[0]]);
         setAnimation(null);
         setPaused(false);
+        setHelpUsed(false);
+        setAssistedCorrect(0);
     };
 
     const getOptionClass = (option) => {
@@ -303,7 +327,17 @@ export default function QuizPage({ subject = 'Addition', profileId, avatar, onNa
                 {/* Buddy sidebar */}
                 <div className="w-52 shrink-0">
                     <div className="sticky top-24">
-                        <BotHelper avatar={avatar} currentQuestion={question} questionNumber={questionNumber} paused={paused} onPause={() => setPaused(true)} onResume={() => setPaused(false)} />
+                        <BotHelper
+                            avatar={avatar}
+                            currentQuestion={question}
+                            questionNumber={questionNumber}
+                            paused={paused}
+                            onPause={() => setPaused(true)}
+                            onResume={() => setPaused(false)}
+                            locked={locked}
+                            helpUsed={helpUsed}
+                            onHelpUsed={() => setHelpUsed(true)}
+                        />
                     </div>
                 </div>
             </div>

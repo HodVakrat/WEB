@@ -57,10 +57,12 @@ async function generateWithRetry(prompt, { retriesPerModel = 2, baseDelay = 700 
     throw lastErr;
 }
 
-export default function BotHelper({ avatar, currentQuestion, questionNumber, paused, onPause, onResume }) {
+export default function BotHelper({ avatar, currentQuestion, questionNumber, paused, onPause, onResume, locked, helpUsed, onHelpUsed }) {
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [hintGiven, setHintGiven] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [pendingRequest, setPendingRequest] = useState(null);
     const [prevQuestionNumber, setPrevQuestionNumber] = useState(questionNumber);
 
     // Reset the bot on every new question by questionNumber — NOT by question text,
@@ -70,7 +72,41 @@ export default function BotHelper({ avatar, currentQuestion, questionNumber, pau
         setPrevQuestionNumber(questionNumber);
         setMessages([]);
         setHintGiven(false);
+        setShowConfirm(false);
+        setPendingRequest(null);
     }
+
+    /*
+     * Entry point for the Hint/Answer buttons ("no coins on assisted questions"):
+     * the FIRST help request on a question opens a confirmation pop-up (and freezes
+     * the timer) instead of calling the AI directly. Confirming forfeits the coins
+     * for this question (onHelpUsed) and then runs the normal help flow. Once help
+     * was already confirmed on this question, further clicks skip the pop-up —
+     * the price was already paid.
+     */
+    const handleHelpClick = (requestType) => {
+        if (!helpUsed) {
+            setPendingRequest(requestType);
+            setShowConfirm(true);
+            onPause && onPause();
+            return;
+        }
+        askBot(requestType);
+    };
+
+    const handleConfirmHelp = () => {
+        setShowConfirm(false);
+        onHelpUsed && onHelpUsed();
+        askBot(pendingRequest);
+        setPendingRequest(null);
+    };
+
+    const handleCancelHelp = () => {
+        // No penalty: close the pop-up and let the clock run again.
+        setShowConfirm(false);
+        setPendingRequest(null);
+        onResume && onResume();
+    };
 
     const askBot = async (requestType) => {
         // Asking for help freezes the quiz timer until the child clicks "Continue".
@@ -120,6 +156,50 @@ Explain the solution step by step in a simple and encouraging way for a young ch
 
     return (
         <div className="flex flex-col items-center gap-3">
+            {/*
+             * Coin-forfeit confirmation pop-up. The full-screen backdrop blocks
+             * every click behind it (including the "Continue" button), and
+             * clicking the backdrop itself does nothing — the kid must pick one
+             * of the two buttons. The quiz timer is already paused at this point.
+             */}
+            {showConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-2xl max-w-sm w-full text-center">
+                        <div className="text-5xl mb-3">💡</div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                            MathBuddy can help you!
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+                            But if you get help, you won't earn coins ⭐ for this question.
+                            Do you still want help?
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleConfirmHelp}
+                                className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-4 rounded-xl transition-colors"
+                            >
+                                Yes, help me!
+                            </button>
+                            <button
+                                onClick={handleCancelHelp}
+                                className="flex-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-white font-bold py-3 px-4 rounded-xl transition-colors"
+                            >
+                                No thanks
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reminder that this question's coins were forfeited (until next question) */}
+            {helpUsed && (
+                <div className="w-full bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-xl px-3 py-1.5 text-center">
+                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                        💫 No coins for this question
+                    </p>
+                </div>
+            )}
+
             {/* Speech bubble */}
             <div className="relative w-full">
                 <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl p-4 shadow-lg min-h-20 relative">
@@ -146,8 +226,10 @@ Explain the solution step by step in a simple and encouraging way for a young ch
                 </div>
             </div>
 
-            {/* Continue — resumes the quiz timer (shown only while paused for bot help) */}
-            {paused && (
+            {/* Continue — resumes the quiz timer (shown only while paused for bot
+                help; hidden while the confirmation pop-up is open, since the pause
+                belongs to the pop-up then) */}
+            {paused && !showConfirm && (
                 <button
                     onClick={() => onResume && onResume()}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-xl transition-colors text-sm flex items-center justify-center gap-1"
@@ -162,19 +244,20 @@ Explain the solution step by step in a simple and encouraging way for a young ch
                 {avatar || '🤖'}
             </div>
 
-            {/* Action buttons */}
+            {/* Action buttons. Disabled once the question is locked (answered or
+                timed out) — help is only available on a live question. */}
             <div className="flex gap-2 w-full">
                 <button
-                    onClick={() => askBot('hint')}
-                    disabled={isLoading}
+                    onClick={() => handleHelpClick('hint')}
+                    disabled={isLoading || locked}
                     className="flex-1 bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 text-gray-900 font-bold py-2 px-3 rounded-xl transition-colors text-sm flex items-center justify-center gap-1"
                 >
                     <span>💡</span>
                     <span>Hint</span>
                 </button>
                 <button
-                    onClick={() => askBot('solution')}
-                    disabled={isLoading || !hintGiven}
+                    onClick={() => handleHelpClick('solution')}
+                    disabled={isLoading || locked || !hintGiven}
                     className="flex-1 bg-green-500 hover:bg-green-400 disabled:opacity-50 text-white font-bold py-2 px-3 rounded-xl transition-colors text-sm flex items-center justify-center gap-1"
                     title={!hintGiven ? 'Try a hint first!' : ''}
                 >

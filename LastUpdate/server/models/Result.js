@@ -17,6 +17,9 @@ const resultSchema = new mongoose.Schema({
   score:     { type: Number, required: true, min: 0 },
   total:     { type: Number, required: true, min: 0 },
   points:    { type: Number, required: true, min: 0 },
+  // Correct answers that used bot help (earned no coins). Old documents
+  // saved before this feature read back as 0 via the default.
+  assistedCorrect: { type: Number, default: 0, min: 0 },
   date:      { type: Date, default: Date.now },
 });
 
