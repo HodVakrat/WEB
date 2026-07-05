@@ -1,18 +1,12 @@
-# React + Vite
 <div align="center">
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 # 🧮 MathematiKids
 
-Currently, two official plugins are available:
 ### Making math fun for kids — one adaptive quiz at a time.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 An interactive web app that helps children **aged 6–12** practice math through
 adaptive quizzes, an AI helper, rewards, and a cosmetic avatar shop.
 
-## React Compiler
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38BDF8?logo=tailwindcss&logoColor=white)
@@ -20,16 +14,12 @@ adaptive quizzes, an AI helper, rewards, and a cosmetic avatar shop.
 ![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%209-47A248?logo=mongodb&logoColor=white)
 ![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini-8E75B2?logo=googlegemini&logoColor=white)
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
 </div>
 
-Note: This will impact Vite dev & build performances.
 ---
 
-## Expanding the ESLint configuration
 ## ✨ Overview
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 **MathematiKids** is a **MERN-style** single-page app built around a **Netflix-style account model**:
 a parent creates one account and adds several **kid profiles**, then each kid logs into their own
 profile to play. Quizzes **adapt their difficulty in real time** to the child's performance, an
@@ -44,6 +34,7 @@ on **avatars** in the shop.
 - ➕ **Six subjects, age-gated** — Addition & Subtraction (6+), Multiplication & Division (9+), Fractions & Percentages (11+).
 - ⏱️ **Per-question timer** — freezes automatically while the child reads help from the AI buddy.
 - 🤖 **AI buddy (MathBuddy)** — powered by **Google Gemini**; gives a **Hint** first, and only then unlocks the full **Answer**.
+- 🚫 **Honest rewards** — asking MathBuddy for help shows a friendly confirmation pop-up and **forfeits the coins for that question** (enforced on the server). Score and difficulty progression are unaffected — kids can still learn without being tempted to farm coins.
 - ⭐ **Coins by difficulty** — Easy = **3**, Medium = **7**, Hard = **20** per correct answer.
 - 🛍️ **Avatar shop** — spend coins on fun avatars.
 - 📚 **Per-profile history** — every quiz is saved, with filtering and summary stats.
@@ -92,7 +83,7 @@ LastUpdate/
 │  │  ├─ ParentScreen.jsx        # kid-profile management
 │  │  ├─ MathDashboard.jsx       # pick a subject + rewards legend
 │  │  ├─ QuizPage.jsx            # adaptive quiz engine + timer
-│  │  ├─ BotHelper.jsx           # AI buddy (Gemini)
+│  │  ├─ BotHelper.jsx           # AI buddy (Gemini) + coin-forfeit pop-up
 │  │  └─ HistoryPage.jsx         # per-profile quiz history
 │  ├─ services/                  # AuthService / ProfileService / ResultService
 │  ├─ logic/QuizLogic.js         # pure question generators
@@ -166,7 +157,7 @@ All routes are mounted under `/api`.
 | `PUT`    | `/profiles/:profileId`            | Edit a profile                       |
 | `DELETE` | `/profiles/:profileId`            | Delete a profile (cascades results)  |
 | `PUT`    | `/profiles/:profileId/avatar`     | Buy / equip an avatar                |
-| `POST`   | `/results`                        | Save a finished quiz + award coins   |
+| `POST`   | `/results`                        | Save a finished quiz + award coins (bot-assisted answers earn none) |
 | `GET`    | `/results/:profileId`             | Get a profile's quiz history         |
 | `GET`    | `/health`                         | Health check                         |
 
